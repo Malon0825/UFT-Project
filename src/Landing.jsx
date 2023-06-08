@@ -2,6 +2,9 @@ import React, { useState, useRef } from 'react'
 import { background } from './assets'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../src/context/auth'
+import { getFirestore, addDoc, collection } from 'firebase/firestore'
+import { db, auth } from './firebase';
+
 
 const Landing = () => {
 
@@ -16,6 +19,20 @@ const Landing = () => {
     const emailRef = useRef();
     const passRef = useRef();
 
+    const [signupUserId, setSignupUserId] = useState();
+
+
+    const fNameRef = useRef();
+    const lNameRef = useRef();
+    const mNameRef = useRef();
+    const posRef = useRef();
+    const genderRef = useRef();
+    const emailSignupRef = useRef();
+    const passSignupRef = useRef();
+
+    const db = getFirestore()
+    const colRef = collection(db, 'users')
+
     const handleSignup = () => {
 
         setLogin(false)
@@ -24,6 +41,14 @@ const Landing = () => {
     };
 
     const handleLogin = () => {
+
+        fNameRef.current.value = ""
+        lNameRef.current.value = ""
+        mNameRef.current.value = ""
+        posRef.current.value = ""
+        genderRef.current.value = ""
+        emailSignupRef.current.value = ""
+        passSignupRef.current.value = ""
 
         setLogin(true)
         setSignup(false)
@@ -52,6 +77,38 @@ const Landing = () => {
         setLoading(false);
     }
 
+    async function handleSignUp(e) {
+        e.preventDefault()
+  
+        const firstName = fNameRef.current.value;
+        const lastName = lNameRef.current.value;
+        const midName = mNameRef.current.value;
+        const position = posRef.current.value;
+        const gender = genderRef.current.value;
+        const email = emailSignupRef.current.value;
+        const password = passSignupRef.current.value;
+
+        try {
+            await auth.createUserWithEmailAndPassword(email, password).then(cred => {
+
+                return addDoc(colRef, {
+                  user_id: cred.user.uid,
+                  first_name: firstName,
+                  last_name: lastName,
+                  mid_name: midName,
+                  position: position,
+                  gender: gender,
+                  email: email
+                })
+                
+            })        
+        }catch{
+            setError('Failed to create an account')
+        }
+        navigate("/home");
+    }
+
+      
   return (
     <div className="w-screen h-screen bg-slate-500 overflow-hidden flex items-center justify-center">
 
@@ -143,55 +200,55 @@ const Landing = () => {
                         </label>  
 
                         <input id='firstname' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
-                        type="text" />                              
+                        type="text" ref={fNameRef}/>                              
                     </div>
 
                     <div className="mt-10 flex flex-row gap-4 font-poppins text-xl font-medium text-center items-center">
-                        <label className="shrink-0" htmlFor="firstname">Last Name:
+                        <label className="shrink-0" htmlFor="lastname">Last Name:
                         </label>  
 
-                        <input id='firstname' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
-                        type="text" />                              
+                        <input id='lastname' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
+                        type="text" ref={lNameRef}/>                              
                     </div>
 
                     <div className="mt-10 flex flex-row gap-4 font-poppins text-xl font-medium text-center items-center">
-                        <label className="shrink-0" htmlFor="firstname">Middle Name:
+                        <label className="shrink-0" htmlFor="middlename">Middle Name:
                         </label>  
 
-                        <input id='firstname' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
-                        type="text" />                              
+                        <input id='middlename' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
+                        type="text" ref={mNameRef}/>                              
                     </div>
 
                     <div className="mt-10 flex flex-row gap-4 font-poppins text-xl font-medium text-center items-center">
-                        <label htmlFor="firstname">Position:
+                        <label htmlFor="position">Position:
                         </label>  
 
-                        <input id='firstname' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
-                        type="text" />                              
+                        <input id='position' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
+                        type="text" ref={posRef}/>                              
                     </div> 
 
                     <div className="mt-10 flex flex-row gap-4 font-poppins text-xl font-medium text-center items-center">
-                        <label htmlFor="firstname">Gender:
+                        <label htmlFor="gender">Gender:
                         </label>  
 
-                        <input id='firstname' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
-                        type="text" />                              
+                        <input id='gender' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
+                        type="text" ref={genderRef}/>                              
                     </div>
 
                     <div className="mt-10 flex flex-row gap-4 font-poppins text-xl font-medium text-center items-center">
-                        <label htmlFor="firstname">Email:
+                        <label htmlFor="email">Email:
                         </label>  
 
-                        <input id='firstname' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
-                        type="text" />                              
+                        <input id='email' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
+                        type="text" ref={emailSignupRef}/>                              
                     </div>
 
                     <div className="mt-10 flex flex-row gap-4 font-poppins text-xl font-medium text-center items-center">
-                        <label htmlFor="firstname">Psssword:
+                        <label htmlFor="password">Psssword:
                         </label>  
 
-                        <input id='firstname' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
-                        type="password" />                              
+                        <input id='password' className="font-poppins text-xl w-full bg-transparent border-b-2 border-[#162730] mt-1 h-[50px] focus:outline-none"
+                        type="password" ref={passSignupRef}/>                              
                     </div>   
                  
                 </div>
@@ -199,13 +256,16 @@ const Landing = () => {
                 
 
                 <div className="flex gap-4">
-                    <button className="w-[150px] h-[50px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                    transition-all ease-in-out duration-300 mt-5"
-                        onClick={() => setAddTeacher(true)}>Continue</button>
-                    
+
                     <button className="w-[150px] h-[50px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                     transition-all ease-in-out duration-300 mt-5"
                         onClick={handleLogin}>Go Back</button>
+
+                    <button className="w-[150px] h-[50px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                    transition-all ease-in-out duration-300 mt-5"
+                        onClick={handleSignUp}>Continue</button>
+                    
+
                 </div>
 
 
