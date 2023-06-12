@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../src/context/auth'
 import './App.css'
 import { background } from './assets'
+import { getFirestore, addDoc, collection  } from 'firebase/firestore'
 
 const App = () => {
 
   const [teachertSec, setTeacherSec] = useState(false);
   const [subjectSec, setSubjectSec] = useState(false);
+  const [schedSec, setSchedSec] = useState(false);
 
   const [addTeacher, setAddTeacher] = useState(false);
   const [editTeacher, setEditTeacher] = useState(false);
@@ -17,13 +19,29 @@ const App = () => {
   const [editSubject, setEditSubject] = useState(false);
   const [deleteSubject, setDeleteSubject] = useState(false);
 
+  const [messageScreen, setMessageScreen] = useState(false);
+  const [popup_message, setPopupMessage] = useState("");
+
+  const teacherNameRef = useRef();
+  const teacherAdvisoryRef = useRef();
   
+  const db = getFirestore()
+  const teacherColRef = collection(db, 'teachers')
+  const subjectColRef = collection(db, 'subjects')
+
   const { logout } = useAuth()
+
+
+  const subjectNameRef = useRef();
+  const subjectTeacherRef = useRef();
+
+
   let navigate = useNavigate()
 
   const handleHomeSect = () => {
 
     setSubjectSec(false)
+    setSchedSec(false)
     setTeacherSec(false)
 
   };
@@ -31,6 +49,7 @@ const App = () => {
   const handleSubjectSect = () => {
 
     setSubjectSec(true)
+    setSchedSec(false)
     setTeacherSec(false)
 
   };
@@ -38,16 +57,51 @@ const App = () => {
   const handleTeacherSect = () => {
 
     setSubjectSec(false)
+    setSchedSec(false)
     setTeacherSec(true)
+
+  };
+
+  const handleSchedSect = () => {
+
+    setSubjectSec(false)
+    setTeacherSec(false)
+    setSchedSec(true)
 
   };
 
   function add_student(){
 
+  };
 
+  function handleMessage(){
+
+    setMessageScreen(false)
+    teacherNameRef.current.value = ""
+    teacherAdvisoryRef.current.value = ""
+
+    subjectNameRef.current.value = ""
+    subjectTeacherRef.current.value = ""
 
   };
 
+  function add_faculty(){
+
+    const teacherName = teacherNameRef.current.value;
+    const teacherAdvisory = teacherAdvisoryRef.current.value;
+
+    try{
+        addDoc(teacherColRef, {
+          teacher_name:  teacherName,
+          teacher_advisory: teacherAdvisory
+        })
+    }
+    catch{
+
+    }
+    setMessageScreen(true)
+    setPopupMessage("Teacher added successfuly!!!")
+  };
 
   async function handleLogOut() {
 
@@ -58,10 +112,43 @@ const App = () => {
     }
   }
 
+  /////////////// Subjects //////////////
+
+
+  function add_subject(){
+
+    const subjectName = subjectNameRef.current.value;
+    const subjectTeacher = subjectTeacherRef.current.value;
+
+    try{
+        addDoc(subjectColRef, {
+          subject_name:  subjectName,
+          subject_teacher: subjectTeacher
+        })
+    }
+    catch{
+
+    }
+    setMessageScreen(true)
+    setPopupMessage("Subject added successfuly!!!")
+
+  };
+
   return (
     <div className="w-screen h-screen bg-slate-500 overflow-hidden flex">
 
       <img className="h-full w-full absolute opacity-60" src={background} alt="image" />
+
+      <div className={`${messageScreen? "flex" : "hidden"}  bg-black bg-opacity-50 h-full w-full absolute z-50 flex items-center justify-center`}>
+          <div className="w-[500px] h-[300px] bg-[#cdc7ce] rounded-xl flex flex-col justify-center items-center gap-4">
+              <p className="font-poppins text-4xl text-center">
+                {popup_message}
+              </p>
+              <button className="border-2 border-black rounded-lg font-poppins text-2xl" onClick={handleMessage}>
+                Done
+              </button>
+          </div>
+      </div>
 
       {/* ///////////////     Hero Section      ///////////////////////////////////////////// */}
 
@@ -103,7 +190,8 @@ const App = () => {
             </button>   
 
             <button className="w-max border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                              transition-all ease-in-out duration-300 p-1">
+                              transition-all ease-in-out duration-300 p-1"
+                    onClick={handleSchedSect}>
               schedules
             </button>  
 
@@ -183,27 +271,23 @@ const App = () => {
             <div className="w-full h-full flex flex-col p-5 gap-3">
 
               <label className="font-poppins text-2xl font-medium"
-                      htmlFor="">Faculty Name:</label> 
+                      htmlFor="">Teacher Name:</label> 
 
               <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                      type="text" />    
+                      type="text" ref={teacherNameRef}/>    
 
               <label className="font-poppins text-2xl font-medium"
                       htmlFor="">Advisory:</label> 
 
               <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                      type="text" />     
-
-              <button className="w-[150px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                transition-all ease-in-out duration-300"
-                      onClick={add_student}>Add Subject</button>
+                      type="text" ref={teacherAdvisoryRef}/>     
 
             </div>
 
             <div className="mb-5 flex flex-row gap-5">
               <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300"
-                      onClick={add_student}>Done</button>
+                      onClick={add_faculty}>Done</button>
 
               <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300"
@@ -224,11 +308,6 @@ const App = () => {
 
             <div className="w-full h-full flex flex-col p-5 gap-4">
 
-              <label className="font-poppins text-2xl font-medium"
-                      htmlFor="">Teacher ID:</label> 
-
-              <input className="font-poppins text-2xl w-[250px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                      type="number" min="1"/>   
 
               <label className="font-poppins text-2xl font-medium"
                       htmlFor="">Faculty Name:</label> 
@@ -241,11 +320,6 @@ const App = () => {
 
               <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
                       type="text" />     
-
-              <button className="w-[150px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                transition-all ease-in-out duration-300"
-                      onClick={add_student}>Edit Subject</button>
-
 
             </div>
 
@@ -263,7 +337,7 @@ const App = () => {
 
         </div>
 
-        {/* ////////////////////////////      Delete Student         ///////////////////////////////////////// */}
+        {/* ////////////////////////////      Delete Teacher         ///////////////////////////////////////// */}
 
         <div className={`${deleteTeacher ? "flex" : "hidden"} flex bg-black bg-opacity-50 h-full w-full absolute items-center justify-center`}>
 
@@ -274,7 +348,7 @@ const App = () => {
             <div className="w-full h-full flex flex-col p-5">
 
               <label className="font-poppins text-2xl font-medium"
-                      htmlFor="">Teacher ID:</label> 
+                      htmlFor="">Teacher Name:</label> 
 
               <input className="font-poppins text-2xl w-[250px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
                       type="number" min="1"/>   
@@ -354,11 +428,18 @@ const App = () => {
                       htmlFor="">Subject Name:</label> 
 
                 <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                      type="text" />    
+                      type="text" ref={subjectNameRef}/>    
 
-                <button className="w-[180px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                
+                <label className="font-poppins text-2xl font-medium"
+                      htmlFor="">Assign Teacher:</label> 
+
+                <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
+                      type="text" ref={subjectTeacherRef}/> 
+
+                {/* <button className="w-[180px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300"
-                      onClick={add_student}>Assign Teacher</button>
+                      onClick={add_student}>Assign Teacher</button> */}
 
 
             </div>
@@ -366,7 +447,7 @@ const App = () => {
             <div className="mb-5 flex flex-row gap-5">
               <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300"
-                      onClick={add_student}>Done</button>
+                      onClick={add_subject}>Done</button>
 
               <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300"
@@ -446,6 +527,7 @@ const App = () => {
                       
             </div>
 
+
             <div className="mb-5 flex flex-row gap-5">
               <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300"
@@ -457,6 +539,52 @@ const App = () => {
             </div>
 
           </div>
+
+        </div>
+
+{/* ////////////////////////////     Schedules Data        ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+
+        <div className={`${schedSec ? 'flex' : 'hidden'} absolute flex-col items-center justify-center`}>
+
+
+          <h1 className="font-poppins text-5xl font-semibold pb-16">
+              Schedules
+          </h1>
+
+          <div className="h-[500px] w-full text-[#162730] flex justify-center gap-4">
+
+
+
+            <label className="font-poppins text-4xl font-semibold"
+                    htmlFor="">
+                      Find:
+            </label>
+
+            <input className="font-poppins text-4xl w-96 bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none"
+                  type="text" />
+
+            <button className="w-[100px] h-[50px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                transition-all ease-in-out duration-300">Search</button>
+
+            
+          <div className="flex items-center justify-center gap-10">
+
+            <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                transition-all ease-in-out duration-300 animate-pulse"
+                    onClick={() => setAddTeacher(true)}>Add</button>
+            
+            <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                transition-all ease-in-out duration-300 animate-pulse"
+                    onClick={() => setEditTeacher(true)}>Edit</button>
+
+            <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                transition-all ease-in-out duration-300 animate-pulse"
+                    onClick={() => setDeleteTeacher(true)}>Delete</button>
+
+          </div>
+          
+          </div>
+
 
         </div>
 
