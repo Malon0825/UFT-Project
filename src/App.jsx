@@ -19,6 +19,9 @@ const App = () => {
   const [editSubject, setEditSubject] = useState(false);
   const [deleteSubject, setDeleteSubject] = useState(false);
 
+  const [sched, setSched] = useState(false);
+  const [editSched, setEditSched] = useState(false);
+
   const [messageScreen, setMessageScreen] = useState(false);
   const [popup_message, setPopupMessage] = useState("");
 
@@ -133,6 +136,89 @@ const App = () => {
     setPopupMessage("Subject added successfuly!!!")
 
   };
+
+
+  /////////////// Schedules //////////////
+
+  const [selectedValues, setSelectedValues] = useState([]);
+  const [monthFromSelectedValues, setMonthFromSelectedValues] = useState();
+  const [monthToSelectedValues, setMonthToSelectedValues] = useState();
+  const [timeFromAmPmSelectedValues, setTimeFromAmPmSelectedValues] = useState();
+  const [timeToAmPmSelectedValues, setTimeToAmPmSelectedValues] = useState();
+
+
+  const handleChangeWeekdays = (event) => {
+    const { value } = event.target;
+    setSelectedValues((prevValues) => [...prevValues, value]);
+  };
+
+  const handleChangeMonthFrom = (event) => {
+    const { value } = event.target;
+    setMonthFromSelectedValues(value);
+  };
+
+  const handleChangeMonthTo = (event) => {
+    const { value } = event.target;
+    setMonthToSelectedValues(value);
+  };
+
+  const handleChangeTimeFromAmPm = (event) => {
+    const { value } = event.target;
+    setTimeFromAmPmSelectedValues(value);
+  };
+
+  const handleChangeTimeToAmPm = (event) => {
+    const { value } = event.target;
+    setTimeToAmPmSelectedValues(value);
+  };
+
+  function handleSetTimeToHours(event) {
+	const value = event.target.value;
+	if (value.length > 2) {
+
+		event.target.value = value.slice(0, 2);
+		const newValue = value.slice(0, 2);
+
+		if (newValue > 12) {
+			event.target.value = 12;
+		  } else if (newValue < 0) {
+			event.target.value = 1;
+		  }
+	}
+
+  }
+
+  function handleSetTimeToMinute(event) {
+	const value = event.target.value;
+	if (value.length > 2) {
+
+		event.target.value = value.slice(0, 2);
+		const newValue = value.slice(0, 2);
+
+		if (newValue > 60) {
+			event.target.value = 60;
+		  } else if (newValue < 0) {
+			event.target.value = 0;
+		  }
+	}
+
+  }
+
+  function handleSetTimeToMouseLeave(event) {
+	const value = event.target.value;
+	if (value.length > 2) {
+
+		event.target.value = value.slice(0, 2);
+		const newValue = value.slice(0, 2);
+
+		if (newValue > 60) {
+			event.target.value = 60;
+		  } else if (newValue < 0) {
+			event.target.value = 0;
+		  }
+	}
+
+  }
 
   return (
     <div className="w-screen h-screen bg-slate-500 overflow-hidden flex">
@@ -547,45 +633,464 @@ const App = () => {
         <div className={`${schedSec ? 'flex' : 'hidden'} absolute flex-col items-center justify-center`}>
 
 
-          <h1 className="font-poppins text-5xl font-semibold pb-16">
-              Schedules
-          </h1>
+            <h1 className="font-poppins text-5xl font-semibold pb-16">
+                Schedules
+            </h1>
 
-          <div className="h-[500px] w-full text-[#162730] flex justify-center gap-4">
+            <div className="h-[500px] w-full text-[#162730] flex justify-center gap-4">
 
 
 
-            <label className="font-poppins text-4xl font-semibold"
-                    htmlFor="">
-                      Find:
-            </label>
+                <label className="font-poppins text-4xl font-semibold"
+                        htmlFor="">
+                        Find:
+                </label>
 
-            <input className="font-poppins text-4xl w-96 bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none"
-                  type="text" />
+                <input className="font-poppins text-4xl w-96 bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none"
+                    type="text" />
 
-            <button className="w-[100px] h-[50px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                transition-all ease-in-out duration-300">Search</button>
+                <button className="w-[100px] h-[50px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                    transition-all ease-in-out duration-300">Search</button>
 
+            </div>
+
+            <div className="flex items-center justify-center gap-10">
+
+                <button className="w-[150px] h-[80px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                    transition-all ease-in-out duration-300 animate-pulse"
+                        onClick={() => setSched(true)}>Set Schedules</button>
+                
+                <button className="w-[150px] h-[80px] text-2xl font-semibold bo rder-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                    transition-all ease-in-out duration-300 animate-pulse"
+                        onClick={() => setEditSched(true)}>Edit Schedules</button>
+
+
+
+            </div>
+
+
+        </div>
+
+        {/* ////////////////////////////     Set Schedules       ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+
+        <div className={`${sched ? "flex" : "hidden"} flex bg-black bg-opacity-50 h-full w-full absolute items-center justify-center`}>
+
+          <div className="h-[800px] w-[800px] bg-[#cdc7ce] rounded-xl bg-opacity-80 flex flex-col items-center justify-center">
+
+            <h1 className="text-3xl font-poppins font-medium">Set Schedule</h1>
+
+            <div className="flex">
+                <div className=" h-[600px] w-[350px] flex flex-col p-5 gap-3">
+
+                    <label className="font-poppins text-3xl font-medium"
+                        htmlFor="">Teacher Name:</label> 
+
+                    <input className="font-poppins text-2xl w-[300px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
+                        type="text" ref={subjectNameRef}/>    
+
+
+                    <label className="font-poppins text-3xl font-medium"
+                        htmlFor="">Subject:</label> 
+
+                    <input className="font-poppins text-2xl w-[300px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
+                        type="text" ref={subjectTeacherRef}/> 
+
+                    <label className="font-poppins text-3xl font-medium"
+                        htmlFor="">Location:</label> 
+
+                    <input className="font-poppins text-2xl w-[300px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
+                        type="text" ref={subjectTeacherRef}/> 
+
+
+                </div>
+
+                <div className=" h-[600px] w-[350px] flex flex-col p-5 gap-3">
+
+                    <label className="font-poppins text-3xl font-medium"
+                            htmlFor="">Days of the Week:</label> 
+
+                    <div className="h-[60px] flex">
+                        <label className="font-poppins text-2xl font-medium border-b-2 border-[#162730] w-[300px] overflow-y-hidden
+                                        flex flex-row items-center scrollbar"
+                                htmlFor="">{selectedValues}                                    
+                        </label> 
+
+                        <select
+                                className="font-poppins text-lg w-5 h-[45px] rounded-md mt-2"
+                                name="weekdays"
+                                id="weekdays"
+                                required
+                                onChange={handleChangeWeekdays}
+								>
+
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Sunday"
+                                >
+                                    Sunday
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Monday"
+                                >
+                                    Monday
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Tuesday"
+                                >
+                                    Tuesday
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Wednesday"
+                                >
+                                    Wednesday
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Thursday"
+                                >
+                                    Thursday
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Friday"
+                                >
+                                    Friday
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Saturday"
+                                >
+                                    Saturday
+                                </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <label className="font-poppins text-3xl font-medium"
+                        htmlFor="">Month From:</label> 
+
+            		<div className="h-[60px] flex">
+                        <label className="font-poppins text-2xl font-medium border-b-2 border-[#162730] w-[300px] overflow-y-hidden
+                                        flex flex-row items-center scrollbar"
+                                htmlFor="">{monthFromSelectedValues}                                    
+                        </label> 
+
+                        <select
+                                className="font-poppins text-lg w-5 h-[45px] rounded-md mt-2"
+                                name="weekdays"
+                                id="weekdays"
+                                required
+                                onChange={handleChangeMonthFrom}>
+
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="January"
+                                >
+                                    January
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Febuary"
+                                >
+                                    Febuary
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value=" March"
+                                >
+                                    March
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="April"
+                                >
+                                    April
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="May"
+                                >
+                                    May
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="June"
+                                >
+                                    June
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="July"
+                                >
+                                    July
+                                </option>
+								<option
+                                    className="font-poppins text-lg"
+                                    value="August"
+                                >
+                                    August
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="September"
+                                >
+                                    September
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="October"
+                                >
+                                    October
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="November"
+                                >
+                                    November
+                                </option>
+								<option
+                                    className="font-poppins text-lg"
+                                    value="December"
+                                >
+                                    December
+                                </option>
+
+                        </select>
+
+                    </div>
+                    <label className="font-poppins text-3xl font-medium"
+                        htmlFor="">Month To:</label> 
+
+					<div className="h-[60px] flex">
+                        <label className="font-poppins text-2xl font-medium border-b-2 border-[#162730] w-[300px] overflow-y-hidden
+                                        flex flex-row items-center scrollbar"
+                                htmlFor="">{monthToSelectedValues}                                    
+                        </label> 
+
+                        <select
+                                className="font-poppins text-lg w-5 h-[45px] rounded-md mt-2"
+                                name="weekdays"
+                                id="weekdays"
+                                required
+                                onChange={handleChangeMonthTo}>
+
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="January"
+                                >
+                                    January
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="Febuary"
+                                >
+                                    Febuary
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value=" March"
+                                >
+                                    March
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="April"
+                                >
+                                    April
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="May"
+                                >
+                                    May
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="June"
+                                >
+                                    June
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="July"
+                                >
+                                    July
+                                </option>
+								<option
+                                    className="font-poppins text-lg"
+                                    value="August"
+                                >
+                                    August
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="September"
+                                >
+                                    September
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="October"
+                                >
+                                    October
+                                </option>
+                                <option
+                                    className="font-poppins text-lg"
+                                    value="November"
+                                >
+                                    November
+                                </option>
+								<option
+                                    className="font-poppins text-lg"
+                                    value="December"
+                                >
+                                    December
+                                </option>
+
+                        </select>
+
+                    </div>
+
+                    <label className="font-poppins text-3xl font-medium"
+                        htmlFor="">Time From:</label> 
+
+						<div className="font-poppins text-2xl flex gap-2 items-center">
+							<input className="font-poppins text-2xl w-[30px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none no-spinners" 
+                        	type="number" min={0} max={60} maxLength={2} ref={subjectTeacherRef} onChange={handleSetTimeToHours} onMouseOut={handleSetTimeToMouseLeave}/>	
+							:
+							<input className="font-poppins text-2xl w-[30px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none no-spinners" 
+                        	type="number" min={0} max={60} maxLength={2} ref={subjectTeacherRef} onChange={handleSetTimeToMinute} onMouseOut={handleSetTimeToMouseLeave}/>
+
+							<label className="font-poppins text-2xl border-b-2 border-[#162730] w-[40px] h-[50px] -mt-1
+                                        flex flex-row items-center scrollbar"
+                                htmlFor="">{timeFromAmPmSelectedValues}                                    
+                       		</label> 
+
+							<select
+                                className="font-poppins text-2xl w-5 h-[50px] rounded-md -mt-1 bg-transparent focus:outline-none"
+                                name="weekdays"
+                                id="weekdays"
+                                required
+                                onChange={handleChangeTimeFromAmPm}>
+
+                                <option
+                                    className="font-poppins text-2xl"
+                                    value="AM"
+                                >
+                                    AM
+                                </option>
+                                <option
+                                    className="font-poppins text-2xl"
+                                    value="PM"
+                                >
+                                    PM
+                                </option>
+                            </select>
+
+						</div>
+
+
+                    <label className="font-poppins text-3xl font-medium"
+                        htmlFor="">Time To:</label> 
+
+						<div className="font-poppins text-2xl flex gap-2 items-center">
+							<input className="font-poppins text-2xl w-[30px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none no-spinners" 
+                        	type="number" min={0} max={60} maxLength={2} ref={subjectTeacherRef} onChange={handleSetTimeToHours} onMouseOut={handleSetTimeToMouseLeave}/>	
+							:
+							<input className="font-poppins text-2xl w-[30px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none no-spinners" 
+                        	type="number" min={0} max={60} maxLength={2} ref={subjectTeacherRef} onChange={handleSetTimeToMinute} onMouseOut={handleSetTimeToMouseLeave}/>
+
+							<label className="font-poppins text-2xl border-b-2 border-[#162730] w-[40px] h-[50px] -mt-1
+                                        flex flex-row items-center scrollbar"
+                                htmlFor="">{timeToAmPmSelectedValues}                                    
+                       		</label> 
+
+							<select
+                                className="font-poppins text-2xl w-5 h-[50px] rounded-md -mt-1 bg-transparent focus:outline-none"
+                                name="weekdays"
+                                id="weekdays"
+                                required
+                                onChange={handleChangeTimeToAmPm}>
+
+                                <option
+                                    className="font-poppins text-2xl"
+                                    value="AM"
+                                >
+                                    AM
+                                </option>
+                                <option
+                                    className="font-poppins text-2xl"
+                                    value="PM"
+                                >
+                                    PM
+                                </option>
+                            </select>
+
+						</div>
+
+                     
+                </div>
+
+
+            </div>
             
-          <div className="flex items-center justify-center gap-10">
+            <div className=" flex flex-row gap-5">
+              <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                transition-all ease-in-out duration-300"
+                      onClick={add_subject}>Done</button>
 
-            <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                transition-all ease-in-out duration-300 animate-pulse"
-                    onClick={() => setAddTeacher(true)}>Add</button>
-            
-            <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                transition-all ease-in-out duration-300 animate-pulse"
-                    onClick={() => setEditTeacher(true)}>Edit</button>
-
-            <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                transition-all ease-in-out duration-300 animate-pulse"
-                    onClick={() => setDeleteTeacher(true)}>Delete</button>
+              <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                transition-all ease-in-out duration-300"
+                       onClick={() => setSched(false)}>Go Back</button>
+            </div>
 
           </div>
           
+        </div>
+
+        {/* ////////////////////////////     Edit Schedules       ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+
+        <div className={`${editSched ? "flex" : "hidden"} flex bg-black bg-opacity-50 h-full w-full absolute items-center justify-center`}>
+
+          <div className="h-[600px] w-[500px] bg-[#cdc7ce] rounded-xl bg-opacity-80 flex flex-col items-center justify-center">
+
+            <h1 className="text-3xl font-poppins font-medium mt-14">Edit Schedules</h1>
+
+            <div className="w-full h-full flex flex-col p-5 gap-3">
+
+                <label className="font-poppins text-2xl font-medium"
+                      htmlFor="">Subject Name:</label> 
+
+                <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
+                      type="text" ref={subjectNameRef}/>    
+
+                
+                <label className="font-poppins text-2xl font-medium"
+                      htmlFor="">Assign Teacher:</label> 
+
+                <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
+                      type="text" ref={subjectTeacherRef}/> 
+
+
+            </div>
+
+            <div className="mb-5 flex flex-row gap-5">
+              <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                transition-all ease-in-out duration-300"
+                      onClick={add_subject}>Done</button>
+
+              <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                transition-all ease-in-out duration-300"
+                       onClick={() => setEditSched(false)}>Go Back</button>
+            </div>
+
           </div>
-
-
+          
         </div>
 
       {/* /////////// Last /////////// */}
