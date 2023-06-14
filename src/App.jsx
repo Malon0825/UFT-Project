@@ -1,224 +1,290 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../src/context/auth'
 import './App.css'
 import { background } from './assets'
-import { getFirestore, addDoc, collection  } from 'firebase/firestore'
+import { getFirestore, addDoc, collection, doc, query, where, onSnapshot  } from 'firebase/firestore'
+import dayjs from 'dayjs'
+import cn from '../src/constant/cn'
+import { generateDate, months } from '../src/constant/Calendar'
 
 const App = () => {
 
-  const [teachertSec, setTeacherSec] = useState(false);
-  const [subjectSec, setSubjectSec] = useState(false);
-  const [schedSec, setSchedSec] = useState(false);
+    const [teachertSec, setTeacherSec] = useState(false);
+    const [subjectSec, setSubjectSec] = useState(false);
+    const [schedSec, setSchedSec] = useState(false);
 
-  const [addTeacher, setAddTeacher] = useState(false);
-  const [editTeacher, setEditTeacher] = useState(false);
-  const [deleteTeacher, setDeleteTeacher] = useState(false);
+    const [addTeacher, setAddTeacher] = useState(false);
+    const [editTeacher, setEditTeacher] = useState(false);
+    const [deleteTeacher, setDeleteTeacher] = useState(false);
 
-  const [addSubject, setAddSubject] = useState(false);
-  const [editSubject, setEditSubject] = useState(false);
-  const [deleteSubject, setDeleteSubject] = useState(false);
+    const [addSubject, setAddSubject] = useState(false);
+    const [editSubject, setEditSubject] = useState(false);
+    const [deleteSubject, setDeleteSubject] = useState(false);
 
-  const [sched, setSched] = useState(false);
-  const [editSched, setEditSched] = useState(false);
+    const [sched, setSched] = useState(false);
+    const [editSched, setEditSched] = useState(false);
 
-  const [messageScreen, setMessageScreen] = useState(false);
-  const [popup_message, setPopupMessage] = useState("");
+    const [messageScreen, setMessageScreen] = useState(false);
+    const [popup_message, setPopupMessage] = useState("");
 
-  const teacherNameRef = useRef();
-  const teacherAdvisoryRef = useRef();
+    const teacherNameRef = useRef();
+    const teacherAdvisoryRef = useRef();
+
+    const searchTeacherSchedRef = useRef();
+    
+    const db = getFirestore()
+    const teacherColRef = collection(db, 'teachers')
+    const subjectColRef = collection(db, 'subjects')
+
+
+    const { logout } = useAuth()
+
+
+    const subjectNameRef = useRef();
+    const subjectTeacherRef = useRef();
+
+
+    let navigate = useNavigate()
+
+    const handleHomeSect = () => {
+
+        setSubjectSec(false)
+        setSchedSec(false)
+        setTeacherSec(false)
+
+    };
+
+    const handleSubjectSect = () => {
+
+        setSubjectSec(true)
+        setSchedSec(false)
+        setTeacherSec(false)
+
+    };
+
+    const handleTeacherSect = () => {
+
+        setSubjectSec(false)
+        setSchedSec(false)
+        setTeacherSec(true)
+
+    };
+
+    const handleSchedSect = () => {
+
+        setSubjectSec(false)
+        setTeacherSec(false)
+        setSchedSec(true)
+
+    };
+
+    function add_student(){
+
+    };
+
+    function handleMessage(){
+
+        setMessageScreen(false)
+        teacherNameRef.current.value = ""
+        teacherAdvisoryRef.current.value = ""
+
+        subjectNameRef.current.value = ""
+        subjectTeacherRef.current.value = ""
+
+    };
+
+    function add_faculty(){
+
+        const teacherName = teacherNameRef.current.value;
+        const teacherAdvisory = teacherAdvisoryRef.current.value;
+
+        try{
+            addDoc(teacherColRef, {
+            teacher_name:  teacherName,
+            teacher_advisory: teacherAdvisory
+            })
+        }
+        catch{
+
+        }
+        setMessageScreen(true)
+        setPopupMessage("Teacher added successfuly!!!")
+    };
+
+    async function handleLogOut() {
+
+        try {
+        await logout()
+        navigate("/")
+        }catch {
+        }
+    }
+
+    /////////////// Subjects //////////////
+
+
+    function add_subject(){
+
+        const subjectName = subjectNameRef.current.value;
+        const subjectTeacher = subjectTeacherRef.current.value;
+
+        try{
+            addDoc(subjectColRef, {
+            subject_name:  subjectName,
+            subject_teacher: subjectTeacher
+            })
+        }
+        catch{
+
+        }
+        setMessageScreen(true)
+        setPopupMessage("Subject added successfuly!!!")
+
+    };
+
+
+    /////////////// Schedules //////////////
+
+    const [selectedValues, setSelectedValues] = useState([]);
+    const [monthFromSelectedValues, setMonthFromSelectedValues] = useState();
+    const [monthToSelectedValues, setMonthToSelectedValues] = useState();
+    const [timeFromAmPmSelectedValues, setTimeFromAmPmSelectedValues] = useState();
+    const [timeToAmPmSelectedValues, setTimeToAmPmSelectedValues] = useState();
+
+
+    const handleChangeWeekdays = (event) => {
+        const { value } = event.target;
+        setSelectedValues((prevValues) => [...prevValues, value]);
+    };
+
+    const handleChangeMonthFrom = (event) => {
+        const { value } = event.target;
+        setMonthFromSelectedValues(value);
+    };
+
+    const handleChangeMonthTo = (event) => {
+        const { value } = event.target;
+        setMonthToSelectedValues(value);
+    };
+
+    const handleChangeTimeFromAmPm = (event) => {
+        const { value } = event.target;
+        setTimeFromAmPmSelectedValues(value);
+    };
+
+    const handleChangeTimeToAmPm = (event) => {
+        const { value } = event.target;
+        setTimeToAmPmSelectedValues(value);
+    };
+
+    function handleSetTimeToHours(event) {
+        const value = event.target.value;
+        if (value.length > 2) {
+
+            event.target.value = value.slice(0, 2);
+            const newValue = value.slice(0, 2);
+
+            if (newValue > 12) {
+                event.target.value = 12;
+            } else if (newValue < 0) {
+                event.target.value = 1;
+            }
+        }
+
+    }
+
+    function handleSetTimeToMinute(event) {
+        const value = event.target.value;
+        if (value.length > 2) {
+
+            event.target.value = value.slice(0, 2);
+            const newValue = value.slice(0, 2);
+
+            if (newValue > 60) {
+                event.target.value = 60;
+            } else if (newValue < 0) {
+                event.target.value = 0;
+            }
+        }
+
+    }
+
+    function handleSetTimeToMouseLeave(event) {
+        const value = event.target.value;
+        if (value.length > 2) {
+
+            event.target.value = value.slice(0, 2);
+            const newValue = value.slice(0, 2);
+
+            if (newValue > 60) {
+                event.target.value = 60;
+            } else if (newValue < 0) {
+                event.target.value = 0;
+            }
+        }
+
+    }
+
+    
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+    const currentDate = dayjs()
+
+    const [today, setToday] = useState(currentDate)
+
+    const [data, setData] = useState([]);//Array type
+    const [searchValue, setSearchValue] = useState([]);//Array type
+    const [inputValue, setInputValue] = useState('');
+    const [teacherNameValue, seTeacherNameValue] = useState();
+
+    useEffect(() => {
+        const q = query(teacherColRef);
+    
+        onSnapshot(q, (snapshot) => {
+        let users = [];
+        snapshot.docs.forEach((doc) => {
+            users.push({ ...doc.data(), id: doc.id });
+        });
+    
+        setData(users);
+        setSearchValue(users);
+        });
+    }, []);
+
+    const filterTitles = e => {
+        const search = e.target.value.toLowerCase()
+        setInputValue(search)
+        const filteredName = data.filter(user => user.teacher_name.toLowerCase().includes(search))
+
+        if(search === ""){
+            setSearchValue(data)
+
+        }else{
+            setSearchValue(filteredName)
+
+        }
+        
+    }
+    const handleNameClick = (name) => {
+        setInputValue(name)
+    }
+
   
-  const db = getFirestore()
-  const teacherColRef = collection(db, 'teachers')
-  const subjectColRef = collection(db, 'subjects')
 
-  const { logout } = useAuth()
+    function searchTeacherSched() {
 
-
-  const subjectNameRef = useRef();
-  const subjectTeacherRef = useRef();
-
-
-  let navigate = useNavigate()
-
-  const handleHomeSect = () => {
-
-    setSubjectSec(false)
-    setSchedSec(false)
-    setTeacherSec(false)
-
-  };
-
-  const handleSubjectSect = () => {
-
-    setSubjectSec(true)
-    setSchedSec(false)
-    setTeacherSec(false)
-
-  };
-
-  const handleTeacherSect = () => {
-
-    setSubjectSec(false)
-    setSchedSec(false)
-    setTeacherSec(true)
-
-  };
-
-  const handleSchedSect = () => {
-
-    setSubjectSec(false)
-    setTeacherSec(false)
-    setSchedSec(true)
-
-  };
-
-  function add_student(){
-
-  };
-
-  function handleMessage(){
-
-    setMessageScreen(false)
-    teacherNameRef.current.value = ""
-    teacherAdvisoryRef.current.value = ""
-
-    subjectNameRef.current.value = ""
-    subjectTeacherRef.current.value = ""
-
-  };
-
-  function add_faculty(){
-
-    const teacherName = teacherNameRef.current.value;
-    const teacherAdvisory = teacherAdvisoryRef.current.value;
-
-    try{
-        addDoc(teacherColRef, {
-          teacher_name:  teacherName,
-          teacher_advisory: teacherAdvisory
-        })
+        const teacherData = data.find(user => user.teacher_name === inputValue)
+        seTeacherNameValue(teacherData)
     }
-    catch{
 
-    }
-    setMessageScreen(true)
-    setPopupMessage("Teacher added successfuly!!!")
-  };
+    useEffect(() => {
+        const n = teacherNameValue?.teacher_name;
+        const a = teacherNameValue?.teacher_advisory;
+        console.log(n);
+        console.log(a);
+    }, [teacherNameValue]);
 
-  async function handleLogOut() {
-
-    try {
-      await logout()
-      navigate("/")
-    }catch {
-    }
-  }
-
-  /////////////// Subjects //////////////
-
-
-  function add_subject(){
-
-    const subjectName = subjectNameRef.current.value;
-    const subjectTeacher = subjectTeacherRef.current.value;
-
-    try{
-        addDoc(subjectColRef, {
-          subject_name:  subjectName,
-          subject_teacher: subjectTeacher
-        })
-    }
-    catch{
-
-    }
-    setMessageScreen(true)
-    setPopupMessage("Subject added successfuly!!!")
-
-  };
-
-
-  /////////////// Schedules //////////////
-
-  const [selectedValues, setSelectedValues] = useState([]);
-  const [monthFromSelectedValues, setMonthFromSelectedValues] = useState();
-  const [monthToSelectedValues, setMonthToSelectedValues] = useState();
-  const [timeFromAmPmSelectedValues, setTimeFromAmPmSelectedValues] = useState();
-  const [timeToAmPmSelectedValues, setTimeToAmPmSelectedValues] = useState();
-
-
-  const handleChangeWeekdays = (event) => {
-    const { value } = event.target;
-    setSelectedValues((prevValues) => [...prevValues, value]);
-  };
-
-  const handleChangeMonthFrom = (event) => {
-    const { value } = event.target;
-    setMonthFromSelectedValues(value);
-  };
-
-  const handleChangeMonthTo = (event) => {
-    const { value } = event.target;
-    setMonthToSelectedValues(value);
-  };
-
-  const handleChangeTimeFromAmPm = (event) => {
-    const { value } = event.target;
-    setTimeFromAmPmSelectedValues(value);
-  };
-
-  const handleChangeTimeToAmPm = (event) => {
-    const { value } = event.target;
-    setTimeToAmPmSelectedValues(value);
-  };
-
-  function handleSetTimeToHours(event) {
-	const value = event.target.value;
-	if (value.length > 2) {
-
-		event.target.value = value.slice(0, 2);
-		const newValue = value.slice(0, 2);
-
-		if (newValue > 12) {
-			event.target.value = 12;
-		  } else if (newValue < 0) {
-			event.target.value = 1;
-		  }
-	}
-
-  }
-
-  function handleSetTimeToMinute(event) {
-	const value = event.target.value;
-	if (value.length > 2) {
-
-		event.target.value = value.slice(0, 2);
-		const newValue = value.slice(0, 2);
-
-		if (newValue > 60) {
-			event.target.value = 60;
-		  } else if (newValue < 0) {
-			event.target.value = 0;
-		  }
-	}
-
-  }
-
-  function handleSetTimeToMouseLeave(event) {
-	const value = event.target.value;
-	if (value.length > 2) {
-
-		event.target.value = value.slice(0, 2);
-		const newValue = value.slice(0, 2);
-
-		if (newValue > 60) {
-			event.target.value = 60;
-		  } else if (newValue < 0) {
-			event.target.value = 0;
-		  }
-	}
-
-  }
 
   return (
     <div className="w-screen h-screen bg-slate-500 overflow-hidden flex">
@@ -630,27 +696,44 @@ const App = () => {
 
 {/* ////////////////////////////     Schedules Data        ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
-        <div className={`${schedSec ? 'flex' : 'hidden'} absolute flex-col items-center justify-center`}>
+        <div className={`${schedSec ? 'flex' : 'hidden'} absolute flex-col gap-4 items-center justify-center`}>
 
 
             <h1 className="font-poppins text-5xl font-semibold pb-16">
                 Schedules
             </h1>
 
-            <div className="h-[500px] w-full text-[#162730] flex justify-center gap-4">
+            <div className="h-[500px] w-full text-[#162730] flex flex-col justify-center gap-4">
 
+                <div className="flex justify-center gap-4">
+                    <label className="font-poppins text-4xl font-semibold"
+                            htmlFor="">
+                            Find:
+                    </label>
 
+                    <input className="font-poppins text-4xl w-96 bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none"
+                        type="text" ref={searchTeacherSchedRef} value={inputValue} onChange={(e) => filterTitles(e)} />
 
-                <label className="font-poppins text-4xl font-semibold"
-                        htmlFor="">
-                        Find:
-                </label>
+                    <button className="w-[100px] h-[50px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                        transition-all ease-in-out duration-300"
+                            onClick={searchTeacherSched}>Search</button>
+                </div>
 
-                <input className="font-poppins text-4xl w-96 bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none"
-                    type="text" />
+                <div className="h-full w-full border-2 border-black rounded-xl">
 
-                <button className="w-[100px] h-[50px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                    transition-all ease-in-out duration-300">Search</button>
+                    <ul className="font-poppins text-4xl font-semibold">
+                        {Array.isArray(searchValue) &&
+                            searchValue.map((user) => {
+                            return (
+                                <li key={user.teacher_name} onClick={() => handleNameClick(user.teacher_name)}>
+                                {user.teacher_name}
+                                </li>
+                            );
+                        })}
+                    </ul>
+
+                </div>
+        
 
             </div>
 
@@ -1095,6 +1178,78 @@ const App = () => {
 
       {/* /////////// Last /////////// */}
       </div>
+
+      {/* <div className="bg-red-300">
+                <div className="relative sm:mt-6 mt-8 flex items-start w-full">
+
+                  <h1 className="text-white sm:text-xl font-poppins hover:scale-110 ml-6
+                                              hover:text-fontColor transition-all duration-300
+                                                ease-linear">
+                      {months[today.month()]}, {today.year()}
+                  </h1>
+      
+                  <div className="absolute right-6 flex flex-row gap-3">
+
+
+                        <button className="text-white sm:text-xl font-poppins sm:hover:scale-150
+                                            transition-all duration-300 ease-in-out"
+                                onClick={() => {setToday(today.month(today.month() - 1))}}>
+                          &lt;
+                        </button>     
+
+                        <button className="flex text-fontColor font-poppins sm:text-xl
+                                        sm:hover:bg-slate-700 rounded-lg 
+                                        transition-all ease-in-out duration-300"
+                                onClick={() => {setToday(currentDate)}}>
+                                        Today
+                        </button>
+
+                        <button className="text-white sm:text-xl font-poppins sm:hover:scale-150 
+                                              transition-all duration-300 ease-in-out"
+                                onClick={() => {setToday(today.month(today.month() + 1))}}>
+                          &gt;
+                        </button>
+
+                    </div>
+
+                </div>  <button></button>
+
+                <div className="relative flex flex-col mt-3 m-5 gap-2">
+
+                    <div className="w-full grid grid-cols-7">
+
+                          {days.map((day, index) => {
+                            
+                            return <h1 className="flex justify-center font-poppins text-fontColor sm:text-lg" 
+                                      key={index}>
+                                        {day}
+                                  </h1>
+                          })}
+                    </div>
+
+                    <div className="w-full grid grid-cols-7 calendar-num-style gap-1">
+
+                      {generateDate(today.month(), today.year()).map(({ date, currentMonth, today }, index) => {
+
+                        return (
+
+                          <div className="flex justify-center border-t-2 border-t-primary calendar-hover-glow" 
+                              key={index}>
+
+                                  <h1 className={cn(currentMonth ? "" : "text-gray-600", 
+                                                    today ? "calendar-num-style-today" : "")}>
+
+                                    {date.date()}
+
+                                  </h1>
+
+                          </div>
+                        )
+                      })}        
+                    </div>
+
+                </div>   
+            </div> */}
 
 
 
