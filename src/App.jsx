@@ -24,6 +24,8 @@ const App = () => {
 
     const [sched, setSched] = useState(false);
     const [editSched, setEditSched] = useState(false);
+    const [viewSched, setViewSched] = useState(false);
+    const [schedWindow, setSchedWindow] = useState(false);
 
     const [messageScreen, setMessageScreen] = useState(false);
     const [popup_message, setPopupMessage] = useState("");
@@ -36,6 +38,7 @@ const App = () => {
     const db = getFirestore()
     const teacherColRef = collection(db, 'teachers')
     const subjectColRef = collection(db, 'subjects')
+    const scheduleColRef = collection(db, 'schedules')
 
 
     const { logout } = useAuth()
@@ -86,6 +89,21 @@ const App = () => {
     function handleMessage(){
 
         setMessageScreen(false)
+        setselectedTeacher("")
+        setSelectedSubject("")
+        setSelectedValues("")
+        setMonthFromSelectedValues("")
+        setMonthToSelectedValues("")
+        setTimeFromAmPmSelectedValues("")
+        setTimeToAmPmSelectedValues("")
+
+        timeFromHourRef.current.value = ""
+        timeFromMinRef.current.value = ""
+
+        timeToHourRef.current.value = ""
+        timeToMinRef.current.value = ""
+
+        locationRef.current.value = ""
         teacherNameRef.current.value = ""
         teacherAdvisoryRef.current.value = ""
 
@@ -146,12 +164,38 @@ const App = () => {
 
     /////////////// Schedules //////////////
 
+    const locationRef = useRef();
+    const timeToHourRef = useRef();
+    const timeToMinRef = useRef();
+
+    const timeFromHourRef = useRef();
+    const timeFromMinRef = useRef();
+
+    const [scheduleData, setScheduleData] = useState([]);
+    const [selectSched, setSelectSched] = useState([]);
+    const [scheduleSubject, setScheduleSubject] = useState();
+    const [schedValue, setSchedValue] = useState();
+
+    const [selectedTeacher, setselectedTeacher] = useState();  
+    const [selectedSubject, setSelectedSubject] = useState();
+    const [subjectData, setSubjectData] = useState([]);
+
     const [selectedValues, setSelectedValues] = useState([]);
     const [monthFromSelectedValues, setMonthFromSelectedValues] = useState();
     const [monthToSelectedValues, setMonthToSelectedValues] = useState();
     const [timeFromAmPmSelectedValues, setTimeFromAmPmSelectedValues] = useState();
     const [timeToAmPmSelectedValues, setTimeToAmPmSelectedValues] = useState();
 
+
+    const handleSelectTeacher = (event) => {
+        const { value } = event.target;
+        setselectedTeacher(value);
+    };
+
+    const handleSelectSubject = (event) => {
+        const { value } = event.target;
+        setSelectedSubject(value);
+    };
 
     const handleChangeWeekdays = (event) => {
         const { value } = event.target;
@@ -228,6 +272,30 @@ const App = () => {
 
     
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    const monthNumbers = {
+        January: 0,
+        February: 1,
+        March: 2,
+        April: 3,
+        May: 4,
+        June: 5,
+        July: 6,
+        August: 7,
+        September: 8,
+        October: 9,
+        November: 10,
+        December: 11
+      };
+    const dayNumbers = {
+        Monday: 1,
+        Tuesday: 2,
+        Wednesday: 3,
+        Thursday: 4,
+        Friday: 5,
+        Saturday: 6,
+        Sunday: 7
+    };
+
 
     const currentDate = dayjs()
 
@@ -235,6 +303,7 @@ const App = () => {
 
     const [data, setData] = useState([]);//Array type
     const [searchValue, setSearchValue] = useState([]);//Array type
+    
     const [inputValue, setInputValue] = useState('');
     const [teacherNameValue, seTeacherNameValue] = useState();
 
@@ -249,6 +318,32 @@ const App = () => {
     
         setData(users);
         setSearchValue(users);
+        });
+    }, []);
+
+    useEffect(() => {
+        const q = query(subjectColRef);
+    
+        onSnapshot(q, (snapshot) => {
+        let users = [];
+        snapshot.docs.forEach((doc) => {
+            users.push({ ...doc.data(), id: doc.id });
+        });
+    
+        setSubjectData(users);
+        });
+    }, []);
+
+    useEffect(() => {
+        const q = query(scheduleColRef);
+    
+        onSnapshot(q, (snapshot) => {
+        let users = [];
+        snapshot.docs.forEach((doc) => {
+            users.push({ ...doc.data(), id: doc.id });
+        });
+        //console.log(users)
+        setScheduleData(users);
         });
     }, []);
 
@@ -270,21 +365,141 @@ const App = () => {
         setInputValue(name)
     }
 
-  
+    const [subject_name, set_subject_name] = useState();
+    const [teacher_name, set_teacher_name] = useState();
+    const [days_of_weeks, set_days_of_weeks] = useState([]);
+    const [location, set_location] = useState();
+    const [month_from, set_month_from] = useState();
+    const [month_to, set_month_to] = useState();
+
+    const [month_from_name, set_month_from_name] = useState();
+    const [month_to_name, set_month_to_name] = useState();
+    
+
+    const [time_from, set_time_from] = useState();
+    const [time_to, set_time_to] = useState();
+
+    const [highlightedDay, setHighlightedDay] = useState([]);
+
+    const schedSelectSubject = (event) => {
+        const { value } = event.target;
+        setScheduleSubject(value);
+    
+        setSelectSched("");
+        try {
+            console.log(value);
+            const q = query(
+                scheduleColRef,
+                where("subject_name", "==", value),
+                where("teacher_name", "==", inputValue)
+            );
+    
+            onSnapshot(q, (snapshot) => {
+                let users = [];
+                snapshot.docs.forEach((doc) => {
+                    users.push({ ...doc.data(), id: doc.id });
+                });
+                setSelectSched(users);
+    
+                const allDaysOfWeek = users.map((user) => user.days_of_weeks);
+                const daysAsNumbers = allDaysOfWeek.map((days) =>
+                    days.map((day) => dayNumbers[day])
+                );
+                const arrayOfDays = daysAsNumbers[0];
+                set_days_of_weeks(arrayOfDays)
+                
+                const monthFrom = users[0].month_from;
+                set_month_from_name(monthFrom);
+                const monthsFromAsNumber = monthNumbers[monthFrom];
+                set_month_from(monthsFromAsNumber);
+
+                const monthTo= users[0].month_to;    
+                set_month_to_name(monthTo);  
+                const monthsToAsNumber = monthNumbers[monthTo];           
+                set_month_to(monthsToAsNumber);
+
+                const timeFromHour= users[0].time_from_hour;
+                const timeFromMin= users[0].time_from_min;
+                const timeFromHorizon= users[0].time_from;
+                const timeFrom = timeFromHour + ":" + timeFromMin + " " + timeFromHorizon;
+                set_time_from(timeFrom);
+
+                const timeToHour= users[0].time_to_hour;
+                const timeToMin= users[0].time_to_min;
+                const timeToHorizon= users[0].time_to;
+                const timeTo = timeToHour + ":" + timeToMin + " " + timeToHorizon;
+                set_time_to(timeTo);
+
+                const teacherName= users[0].teacher_name;
+                set_teacher_name(teacherName)
+
+                const subName= users[0].subject_name;
+                set_subject_name(subName)
+
+                const location= users[0].location;
+                set_location(location)
+            });
+        } catch {}
+    };
+
+
 
     function searchTeacherSched() {
+        setViewSched(true);
+        setScheduleSubject("")
+        seTeacherNameValue("")
+      
+        const teacherScheds = scheduleData.filter(
+          user => user.teacher_name === inputValue
+        );
+        seTeacherNameValue(teacherScheds);
+      }
 
-        const teacherData = data.find(user => user.teacher_name === inputValue)
-        seTeacherNameValue(teacherData)
-    }
 
-    useEffect(() => {
-        const n = teacherNameValue?.teacher_name;
-        const a = teacherNameValue?.teacher_advisory;
-        console.log(n);
-        console.log(a);
-    }, [teacherNameValue]);
 
+    function showSchedDetails (event){
+
+        setSchedWindow(true);
+        console.log(highlightedDay);
+    };
+
+    function viewSchedBack (){
+
+        setViewSched(false)
+    };
+    
+
+    const setSchedule = () => {
+
+        const location = locationRef.current.value;
+        const timeFromHour = timeFromHourRef.current.value;
+        const timeToHour = timeToHourRef.current.value;
+        const timeFromMin = timeFromMinRef.current.value;
+        const timeTomMin = timeToMinRef.current.value;
+
+        try{
+            addDoc(scheduleColRef, {
+            teacher_name:  selectedTeacher,
+            subject_name: selectedSubject,
+            location: location,
+            days_of_weeks: selectedValues,
+            month_from: monthFromSelectedValues,
+            month_to: monthToSelectedValues,
+            time_from_hour: timeFromHour,
+            time_from_min: timeFromMin,
+            time_from: timeFromAmPmSelectedValues,
+            time_to_hour: timeToHour,
+            time_to_min: timeTomMin,
+            time_to: timeToAmPmSelectedValues
+            })
+        }
+        catch{
+
+        }
+        setMessageScreen(true)
+        setPopupMessage("Schedule added successfuly!!!")
+
+    };
 
   return (
     <div className="w-screen h-screen bg-slate-500 overflow-hidden flex">
@@ -399,13 +614,13 @@ const App = () => {
                                 transition-all ease-in-out duration-300 animate-pulse"
                     onClick={() => setAddTeacher(true)}>Add</button>
             
-            <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+            {/* <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300 animate-pulse"
                     onClick={() => setEditTeacher(true)}>Edit</button>
 
             <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300 animate-pulse"
-                    onClick={() => setDeleteTeacher(true)}>Delete</button>
+                    onClick={() => setDeleteTeacher(true)}>Delete</button> */}
 
           </div>
 
@@ -553,13 +768,13 @@ const App = () => {
                                 transition-all ease-in-out duration-300 animate-pulse"
                     onClick={() => setAddSubject(true)}>Add</button>
             
-            <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+            {/* <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300 animate-pulse"
                     onClick={() => setEditSubject(true)}>Edit</button>
 
             <button className="w-[150px] h-[60px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300 animate-pulse"
-                    onClick={() => setDeleteSubject(true)}>Delete</button>
+                    onClick={() => setDeleteSubject(true)}>Delete</button> */}
 
           </div>
 
@@ -696,14 +911,14 @@ const App = () => {
 
 {/* ////////////////////////////     Schedules Data        ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
-        <div className={`${schedSec ? 'flex' : 'hidden'} absolute flex-col gap-4 items-center justify-center`}>
+        <div className={`${schedSec ? 'flex' : 'hidden'} absolute flex-col gap-4 items-center`}>
 
 
             <h1 className="font-poppins text-5xl font-semibold pb-16">
                 Schedules
             </h1>
 
-            <div className="h-[500px] w-full text-[#162730] flex flex-col justify-center gap-4">
+            <div className="h-[500px] w-full text-[#162730] flex flex-col gap-4">
 
                 <div className="flex justify-center gap-4">
                     <label className="font-poppins text-4xl font-semibold"
@@ -719,9 +934,9 @@ const App = () => {
                             onClick={searchTeacherSched}>Search</button>
                 </div>
 
-                <div className="h-full w-full border-2 border-black rounded-xl">
+                <div className="h-max w-full p-10 border-2 border-black rounded-xl">
 
-                    <ul className="font-poppins text-4xl font-semibold">
+                    <ul className="font-poppins text-4xl cursor-pointer">
                         {Array.isArray(searchValue) &&
                             searchValue.map((user) => {
                             return (
@@ -742,10 +957,6 @@ const App = () => {
                 <button className="w-[150px] h-[80px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                     transition-all ease-in-out duration-300 animate-pulse"
                         onClick={() => setSched(true)}>Set Schedules</button>
-                
-                <button className="w-[150px] h-[80px] text-2xl font-semibold bo rder-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                    transition-all ease-in-out duration-300 animate-pulse"
-                        onClick={() => setEditSched(true)}>Edit Schedules</button>
 
 
 
@@ -768,21 +979,69 @@ const App = () => {
                     <label className="font-poppins text-3xl font-medium"
                         htmlFor="">Teacher Name:</label> 
 
-                    <input className="font-poppins text-2xl w-[300px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                        type="text" ref={subjectNameRef}/>    
+                    <div className="h-[60px] flex">
+                        <label className="font-poppins text-2xl font-medium border-b-2 border-[#162730] w-[300px] overflow-y-hidden
+                                        flex flex-row items-center scrollbar"
+                                htmlFor="">{selectedTeacher}                                    
+                        </label> 
+
+
+                        <select
+                        className="font-poppins text-lg w-5 h-[45px] rounded-md mt-2"
+                        name="teacher"
+                        id="teacher"
+                        required
+                        onChange={handleSelectTeacher}
+                        >
+                        {data.map(user => (
+                            <option
+                            key={user.teacher_name}
+                            value={user.teacher_name}
+                            className="font-poppins text-lg"
+                            >
+                            {user.teacher_name}
+                            </option>
+                        ))}
+                        </select>
+
+                    </div>
 
 
                     <label className="font-poppins text-3xl font-medium"
                         htmlFor="">Subject:</label> 
 
-                    <input className="font-poppins text-2xl w-[300px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                        type="text" ref={subjectTeacherRef}/> 
+                    <div className="h-[60px] flex">
+                        <label className="font-poppins text-2xl font-medium border-b-2 border-[#162730] w-[300px] overflow-y-hidden
+                                        flex flex-row items-center scrollbar"
+                                htmlFor="">{selectedSubject}                                    
+                        </label> 
+
+
+                        <select
+                        className="font-poppins text-lg w-5 h-[45px] rounded-md mt-2"
+                        name="teacher"
+                        id="teacher"
+                        required
+                        onChange={handleSelectSubject}
+                        >
+                        {subjectData.map(user => (
+                            <option
+                            key={user.subject_name}
+                            value={user.subject_name}
+                            className="font-poppins text-lg"
+                            >
+                            {user.subject_name}
+                            </option>
+                        ))}
+                        </select>
+
+                    </div>
 
                     <label className="font-poppins text-3xl font-medium"
                         htmlFor="">Location:</label> 
 
                     <input className="font-poppins text-2xl w-[300px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                        type="text" ref={subjectTeacherRef}/> 
+                        type="text" ref={locationRef}/> 
 
 
                 </div>
@@ -1044,10 +1303,10 @@ const App = () => {
 
 						<div className="font-poppins text-2xl flex gap-2 items-center">
 							<input className="font-poppins text-2xl w-[30px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none no-spinners" 
-                        	type="number" min={0} max={60} maxLength={2} ref={subjectTeacherRef} onChange={handleSetTimeToHours} onMouseOut={handleSetTimeToMouseLeave}/>	
+                        	type="number" min={0} max={60} maxLength={2} ref={timeFromHourRef} onChange={handleSetTimeToHours} onMouseOut={handleSetTimeToMouseLeave}/>	
 							:
 							<input className="font-poppins text-2xl w-[30px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none no-spinners" 
-                        	type="number" min={0} max={60} maxLength={2} ref={subjectTeacherRef} onChange={handleSetTimeToMinute} onMouseOut={handleSetTimeToMouseLeave}/>
+                        	type="number" min={0} max={60} maxLength={2} ref={timeFromMinRef} onChange={handleSetTimeToMinute} onMouseOut={handleSetTimeToMouseLeave}/>
 
 							<label className="font-poppins text-2xl border-b-2 border-[#162730] w-[40px] h-[50px] -mt-1
                                         flex flex-row items-center scrollbar"
@@ -1083,10 +1342,10 @@ const App = () => {
 
 						<div className="font-poppins text-2xl flex gap-2 items-center">
 							<input className="font-poppins text-2xl w-[30px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none no-spinners" 
-                        	type="number" min={0} max={60} maxLength={2} ref={subjectTeacherRef} onChange={handleSetTimeToHours} onMouseOut={handleSetTimeToMouseLeave}/>	
+                        	type="number" min={0} max={60} maxLength={2} ref={timeToHourRef} onChange={handleSetTimeToHours} onMouseOut={handleSetTimeToMouseLeave}/>	
 							:
 							<input className="font-poppins text-2xl w-[30px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none no-spinners" 
-                        	type="number" min={0} max={60} maxLength={2} ref={subjectTeacherRef} onChange={handleSetTimeToMinute} onMouseOut={handleSetTimeToMouseLeave}/>
+                        	type="number" min={0} max={60} maxLength={2} ref={timeToMinRef} onChange={handleSetTimeToMinute} onMouseOut={handleSetTimeToMouseLeave}/>
 
 							<label className="font-poppins text-2xl border-b-2 border-[#162730] w-[40px] h-[50px] -mt-1
                                         flex flex-row items-center scrollbar"
@@ -1125,7 +1384,7 @@ const App = () => {
             <div className=" flex flex-row gap-5">
               <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300"
-                      onClick={add_subject}>Done</button>
+                      onClick={setSchedule}>Done</button>
 
               <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
                                 transition-all ease-in-out duration-300"
@@ -1136,120 +1395,186 @@ const App = () => {
           
         </div>
 
-        {/* ////////////////////////////     Edit Schedules       ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
+                {/* ////////////////////////////    View Schedules       ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */}
 
-        <div className={`${editSched ? "flex" : "hidden"} flex bg-black bg-opacity-50 h-full w-full absolute items-center justify-center`}>
+        <div className={`${viewSched ? "flex" : "hidden"} flex bg-black bg-opacity-50 h-full w-full absolute items-center justify-center`}>
 
-          <div className="h-[600px] w-[500px] bg-[#cdc7ce] rounded-xl bg-opacity-80 flex flex-col items-center justify-center">
+            <div className="h-[900px] w-[1000px] relative bg-[#cdc7ce] rounded-xl bg-opacity-90 flex flex-col items-center">
 
-            <h1 className="text-3xl font-poppins font-medium mt-14">Edit Schedules</h1>
+                <h1 className="text-3xl font-poppins font-medium mt-14">View Schedules</h1>
 
-            <div className="w-full h-full flex flex-col p-5 gap-3">
+                <div className="h-[700px] w-[900px]">
 
-                <label className="font-poppins text-2xl font-medium"
-                      htmlFor="">Subject Name:</label> 
+                    <div className="relative sm:mt-6 mt-8 flex items-start w-full">
 
-                <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                      type="text" ref={subjectNameRef}/>    
+                        <h1 className="text-white text-4xl font-poppins hover:scale-110 ml-6
+                                                    hover:text-fontColor transition-all duration-300
+                                                        ease-linear">
+                            {months[today.month()]}, {today.year()}
+                        </h1>
+        
+                        <div className="absolute right-6 flex flex-row gap-3 text-4xl">
+
+
+                                <button className="text-white font-poppins sm:hover:scale-150
+                                                    transition-all duration-300 ease-in-out"
+                                        onClick={() => {setToday(today.month(today.month() - 1))}}>
+                                &lt;
+                                </button>     
+
+                                <button className="flex text-fontColor font-poppins
+                                                hover:scale-125 rounded-lg 
+                                                transition-all ease-in-out duration-300"
+                                        onClick={() => {setToday(currentDate)}}>
+                                                Today
+                                </button>
+
+                                <button className="text-white font-poppins sm:hover:scale-150 
+                                                    transition-all duration-300 ease-in-out"
+                                        onClick={() => {setToday(today.month(today.month() + 1))}}>
+                                &gt;
+                                </button>
+
+                        </div>
+
+                    </div>
+
+                    <div className="relative flex flex-col mt-3 m-5 gap-2 text-3xl w-full h-full">
+
+                        <div className="w-full h-10 grid grid-cols-7 text-3xl mt-4">
+
+                            {days.map((day, index) => {
+                                
+                                return <h1 className="flex justify-center font-poppins text-fontColor" 
+                                        key={index}>
+                                            {day}
+                                    </h1>
+                            })}
+                        </div>
+
+                        <div className="w-full grid grid-cols-7 calendar-num-style gap-1">
+
+                            {generateDate(today.month(), today.year()).map(
+                                ({ date, currentMonth, today }, index) => {
+                                    const isSetDay = days_of_weeks.includes(date.day());
+                                    const isSetMonth = date.month() === month_from || date.month() === month_to;
+                                    const isHighlighted = isSetDay && isSetMonth;
+                                    return (
+                                    <div
+                                        className="flex justify-center border-t-2 border-t-primary calendar-hover-glow h-24 cursor-pointer"
+                                        key={index}
+                                    >
+                                        <h1
+                                        className={cn(
+                                            currentMonth ? "" : "text-gray-600",
+                                            today ? "" : "",
+                                            isHighlighted ? "bg-slate-800 text-white w-full h-full text-center" : ""
+                                        )}
+                                        onClick={() => {
+                                            if (isHighlighted) {
+                                            setHighlightedDay(isHighlighted);
+                                            showSchedDetails();
+                                            }
+                                        }}
+                                        >
+                                        {date.date()}
+                                        </h1>
+                                    </div>
+                                    );
+                                }
+                            )}
+
+                        </div>
+
+                    </div>   
+
+                </div>
+
+
+                <div className="mt-10 flex flex-row relative w-full">
+
+                    <div className="h-[60px] flex left-4 gap-4 absolute">
+
+                            <label className="font-poppins text-2xl font-medium border-[#162730] overflow-y-hidden
+                                                    flex flex-row items-center scrollbar"
+                                            htmlFor="">Choose Subject:                                    
+                            </label> 
+                            <label className="font-poppins text-2xl font-medium border-b-2 border-[#162730] w-[300px] overflow-y-hidden
+                                            flex flex-row items-center scrollbar"
+                                    htmlFor="">{scheduleSubject}                                    
+                            </label> 
+
+                            <select
+                            className="font-poppins text-lg w-5 h-[45px] rounded-md mt-2"
+                            name="teacher"
+                            id="teacher"
+                            required
+                            onChange={schedSelectSubject}
+                            >
+                            <option value="" disabled selected>Select a subject</option>
+                            {teacherNameValue?.map(user => (
+                                <option
+                                key={user.subject_name}
+                                value={user.subject_name}
+                                className="font-poppins text-lg"
+                                >
+                                {user.subject_name}
+                                </option>
+                            ))}
+                            </select>
+
+                    </div>
+
+
+                    <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                    transition-all ease-in-out duration-300 right-4 absolute"
+                            onClick={viewSchedBack}>Go Back</button>
+                </div>
 
                 
-                <label className="font-poppins text-2xl font-medium"
-                      htmlFor="">Assign Teacher:</label> 
+                <div className={`${schedWindow ? "flex" : "hidden"} h-full w-full bg-[#cdc7ce] rounded-xl bg-opacity-90 absolute justify-center items-center`}>
 
-                <input className="font-poppins text-2xl w-[450px] bg-transparent border-b-2 border-[#162730] -mt-1 h-[50px] focus:outline-none" 
-                      type="text" ref={subjectTeacherRef}/> 
+                    <div className="w-[500px] h-[400px] border-2 border-black bg-slate-800 bg-opacity-70 rounded-xl font-poppins text-2xl gap-5 text-gray-200 flex flex-col p-10">
+                        <h1 className="w-full text-center text-3xl text-gray-100">{subject_name}</h1>
+                        <div className="flex gap-2">
+                            <h1 className="text-black">Teacher:</h1>
+                            <h1>{teacher_name}</h1>
+                        </div>
+                        <div className="flex gap-2">
+                            <h1 className="text-black">Location:</h1>
+                            <h1>{location}</h1>
+                        </div>
+                        <div className="flex gap-2">
+                            <h1 className="text-black">Month From:</h1>
+                            <h1>{month_from_name}</h1>
+                        </div>
+                        <div className="flex gap-2">
+                            <h1 className="text-black">Month To:</h1>
+                            <h1>{month_to_name}</h1>
+                        </div>
+                        <div className="flex gap-2">
+                            <h1 className="text-black">Time:</h1>
+                            <h1>{time_from}</h1>
+                            <h1 className="text-black"> until</h1>
+                            <h1> {time_to}</h1>
+                            
+                        </div>
 
+                    </div>
+
+                    <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
+                                    transition-all ease-in-out duration-300 absolute bottom-4"
+                            onClick={() => setSchedWindow(false)}>Go Back</button>
+                </div>
 
             </div>
 
-            <div className="mb-5 flex flex-row gap-5">
-              <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                transition-all ease-in-out duration-300"
-                      onClick={add_subject}>Done</button>
-
-              <button className="w-[100px] h-[40px] text-2xl font-semibold border-2 rounded-lg border-black hover:scale-110 hover:border-[#40434a]
-                                transition-all ease-in-out duration-300"
-                       onClick={() => setEditSched(false)}>Go Back</button>
-            </div>
-
-          </div>
-          
         </div>
 
       {/* /////////// Last /////////// */}
       </div>
 
-      {/* <div className="bg-red-300">
-                <div className="relative sm:mt-6 mt-8 flex items-start w-full">
-
-                  <h1 className="text-white sm:text-xl font-poppins hover:scale-110 ml-6
-                                              hover:text-fontColor transition-all duration-300
-                                                ease-linear">
-                      {months[today.month()]}, {today.year()}
-                  </h1>
-      
-                  <div className="absolute right-6 flex flex-row gap-3">
-
-
-                        <button className="text-white sm:text-xl font-poppins sm:hover:scale-150
-                                            transition-all duration-300 ease-in-out"
-                                onClick={() => {setToday(today.month(today.month() - 1))}}>
-                          &lt;
-                        </button>     
-
-                        <button className="flex text-fontColor font-poppins sm:text-xl
-                                        sm:hover:bg-slate-700 rounded-lg 
-                                        transition-all ease-in-out duration-300"
-                                onClick={() => {setToday(currentDate)}}>
-                                        Today
-                        </button>
-
-                        <button className="text-white sm:text-xl font-poppins sm:hover:scale-150 
-                                              transition-all duration-300 ease-in-out"
-                                onClick={() => {setToday(today.month(today.month() + 1))}}>
-                          &gt;
-                        </button>
-
-                    </div>
-
-                </div>  <button></button>
-
-                <div className="relative flex flex-col mt-3 m-5 gap-2">
-
-                    <div className="w-full grid grid-cols-7">
-
-                          {days.map((day, index) => {
-                            
-                            return <h1 className="flex justify-center font-poppins text-fontColor sm:text-lg" 
-                                      key={index}>
-                                        {day}
-                                  </h1>
-                          })}
-                    </div>
-
-                    <div className="w-full grid grid-cols-7 calendar-num-style gap-1">
-
-                      {generateDate(today.month(), today.year()).map(({ date, currentMonth, today }, index) => {
-
-                        return (
-
-                          <div className="flex justify-center border-t-2 border-t-primary calendar-hover-glow" 
-                              key={index}>
-
-                                  <h1 className={cn(currentMonth ? "" : "text-gray-600", 
-                                                    today ? "calendar-num-style-today" : "")}>
-
-                                    {date.date()}
-
-                                  </h1>
-
-                          </div>
-                        )
-                      })}        
-                    </div>
-
-                </div>   
-            </div> */}
+      {/*  */}
 
 
 
